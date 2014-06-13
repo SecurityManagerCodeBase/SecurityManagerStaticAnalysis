@@ -26,7 +26,7 @@ public class SetSecurityManagerThenWeakenSecurityManager {
 			 */
 			WeakenedSecurityManager weakSecManager = new WeakenedSecurityManager();
 			System.setSecurityManager(weakSecManager);
-			String file = "test/testInput.txt";
+			String file = "test"+File.separator+"testInput.txt";
 			attemptToAccessFileAndThenCheckPermission(file);
 			weakSecManager.changeReadCheck();
 			System.out.println("!!!!!!!Sucessfully weakened security manager- allows file reads!!!!!!");

@@ -1,3 +1,5 @@
+import java.security.Policy;
+
 
 public class SetThenNullSecurityManager {
 	public static void main(String[] args)
@@ -7,6 +9,7 @@ public class SetThenNullSecurityManager {
 		SecurityManager testManager = System.getSecurityManager();
 		if(testManager == null)
 		{
+			Policy.setPolicy(new AllPermissionsPolicy());
 			System.setSecurityManager(new SecurityManager());
 			System.out.println("Set the security manager the first time");
 			System.setSecurityManager(null);
