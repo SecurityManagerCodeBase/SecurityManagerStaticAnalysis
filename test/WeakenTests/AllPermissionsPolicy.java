@@ -1,3 +1,5 @@
+package WeakenTests;
+import java.io.FilePermission;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.Permission;
@@ -5,15 +7,15 @@ import java.security.PermissionCollection;
 import java.security.Permissions;
 import java.security.Policy;
 import java.security.ProtectionDomain;
-import java.security.SecurityPermission;
 
 
-public class ChangePolicyPolicy extends Policy {
-Permissions allPermissions; 
+public class AllPermissionsPolicy extends Policy{
+
+	Permissions allPermissions; 
 	
 	{
 		allPermissions = new Permissions();
-		allPermissions.add(new SecurityPermission("setPolicy"));
+		allPermissions.add(new AllPermission());
 	}
 	
 	public PermissionCollection getPermissions(CodeSource codesource) {

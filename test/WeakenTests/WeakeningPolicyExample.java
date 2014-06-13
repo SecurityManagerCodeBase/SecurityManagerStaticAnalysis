@@ -1,3 +1,4 @@
+package WeakenTests;
 //Based on an example from http://gemsres.com/story/oct05/140122/source.html
 // main story - http://java.sys-con.com/node/140122?page=0,0
 

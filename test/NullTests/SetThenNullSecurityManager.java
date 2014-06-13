@@ -1,4 +1,7 @@
+package NullTests;
 import java.security.Policy;
+
+import WeakenTests.AllPermissionsPolicy;
 
 
 public class SetThenNullSecurityManager {

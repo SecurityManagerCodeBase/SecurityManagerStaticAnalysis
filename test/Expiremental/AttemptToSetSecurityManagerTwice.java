@@ -1,3 +1,4 @@
+package Expiremental;
 
 public class AttemptToSetSecurityManagerTwice {
 	public static void main(String[] args) {

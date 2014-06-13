@@ -1,3 +1,4 @@
+package WeakenTests;
 /*
  * This class is provides a SecurityManager that can be weakened dynamically
  * to turn of file read checks

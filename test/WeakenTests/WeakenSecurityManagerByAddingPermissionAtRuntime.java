@@ -1,3 +1,4 @@
+package WeakenTests;
 import java.io.File;
 import java.security.AccessControlException;
 import java.security.Policy;

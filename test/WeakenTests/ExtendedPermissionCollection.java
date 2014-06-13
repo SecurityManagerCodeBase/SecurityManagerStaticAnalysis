@@ -1,3 +1,4 @@
+package WeakenTests;
 import java.security.AllPermission;
 import java.security.CodeSource;
 import java.security.Permission;
