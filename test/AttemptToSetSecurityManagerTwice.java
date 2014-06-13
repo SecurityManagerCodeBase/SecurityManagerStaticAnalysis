@@ -1,5 +1,5 @@
 
-public class AttempToSetSecurityManagerTwice {
+public class AttemptToSetSecurityManagerTwice {
 	public static void main(String[] args) {
 		SecurityManager testManager = System.getSecurityManager();
         if (testManager == null)
