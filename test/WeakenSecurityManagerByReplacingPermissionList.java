@@ -9,7 +9,7 @@ import java.security.Policy;
 //everything is allowed but can weaken it to a lesser degree with the 
 //same strategy.
 
-public class WeakenSecurityManagerByReplacingSecurityPolicy {
+public class WeakenSecurityManagerByReplacingPermissionList {
 
 	public static void main(String[] args)
 	{
