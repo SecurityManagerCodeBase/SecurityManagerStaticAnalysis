@@ -6,7 +6,7 @@ import sun.misc.Unsafe;
 
 public class NullSecurityManagerUsingAddress {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SecurityException {
 		System.out.println(System.getProperty("java.runtime.version"));
 		SecurityManager testManager = System.getSecurityManager();
 		if (testManager == null)
@@ -23,13 +23,31 @@ public class NullSecurityManagerUsingAddress {
 				 System.out.println("Java byte version: "+System.getProperty("os.arch"));
 				 if("amd64".equals(System.getProperty("os.arch"))) //checking if 64 bit - probably need to check for others as well later
 				 {
-					 System.setSecurityManager(new SecurityManager());
+					 //System.setSecurityManager(new SecurityManager());
 					 testManager = System.getSecurityManager();
 					 SecurityManager smArray[] = new SecurityManager[1];
 					 smArray[0] = testManager;
 					 long baseOffset = unsafe.arrayBaseOffset(SecurityManager[].class);
 					 long addressOfSecurityManager = unsafe.getLong(smArray, baseOffset);
-					 unsafe.setMemory(addressOfSecurityManager, 8, (byte) 0); //8 bytes for 64 bit
+					 //unsafe.setMemory(addressOfSecurityManager, 8, (byte) 0); //8 bytes for 64 bit
+					 Field security = null;
+					try {
+						security = System.class.getDeclaredField("security");
+					} catch (NoSuchFieldException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					long securityManagerOffset = 0;
+					if (security == null)
+					{
+						System.out.println("Security manager was not found");
+					}
+					else
+					{
+						securityManagerOffset = unsafe.objectFieldOffset(security);
+					}
+					
+					 unsafe.putAddress(addressOfSecurityManager+32, 0);
 					 if (System.getSecurityManager()==null)						 
 					 {
 					   System.out.println("SecurityManager set to null");
