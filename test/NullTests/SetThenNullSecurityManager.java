@@ -7,7 +7,7 @@ import WeakenTests.AllPermissionsPolicy;
 public class SetThenNullSecurityManager {
 	public static void main(String[] args)
 	{
-		//first check to make sure that the securityMagager wasn't set by 
+		//first check to make sure that the securityManager wasn't set by 
 		//the command line
 		SecurityManager testManager = System.getSecurityManager();
 		if(testManager == null)
