@@ -1,10 +1,10 @@
 <FindbugsPlugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="findbugsplugin.xsd" 
-        pluginid="edu.cmu.cs.findbugs.twoSecurityManagerSets"
+        pluginid="edu.cmu.cs.findbugs.multipleSecurityManagerSets"
         provider="Zack Coker" 
         website="http://findbugs.sourceforge.net">
 
-        <Detector class="DetectTwoSecurityManagerSets" reports="TWO_SECURITY_MANAGER_SET_BUG" />
-        <BugPattern type="TWO_SECURITY_MANAGER_SET_BUG" abbrev="TSMSB" category="CORRECTNESS"/>
+        <Detector class="DetectMultipleSecurityManagerSets" reports="MULTIPLE_SECURITY_MANAGER_SET_BUG" />
+        <BugPattern type="MULTIPLE_SECURITY_MANAGER_SET_BUG" abbrev="MSMSB" category="CORRECTNESS"/>
 
 </FindbugsPlugin>
