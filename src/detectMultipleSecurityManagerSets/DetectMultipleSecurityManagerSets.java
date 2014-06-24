@@ -1,3 +1,4 @@
+package detectMultipleSecurityManagerSets;
 import edu.umd.cs.findbugs.BugInstance;
 import edu.umd.cs.findbugs.BugReporter;
 import edu.umd.cs.findbugs.bcel.OpcodeStackDetector;
@@ -30,6 +31,7 @@ public class DetectMultipleSecurityManagerSets extends OpcodeStackDetector {
 			smSetsSeen = smSetsSeen + 1;
 		    if (smSetsSeen > 1)
 		    {
+		    System.out.println("Creating a bug report");
 		      bugReporter.reportBug(new BugInstance(this, "MULTIPLE_SECURITY_MANAGER_SET_BUG",HIGH_PRIORITY)
 		      .addClassAndMethod(this).addString("ConstantOperand: "+sigOperand).addSourceLine(this));
 		    }	
