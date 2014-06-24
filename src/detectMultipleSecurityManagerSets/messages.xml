@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MessageCollection xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="messagecollection.xsd">
+
+        <Plugin>
+                <ShortDescription>Detects when the SecurityManager is set twice or more in the same program</ShortDescription>
+                <Details>This will allow us to determine if the security manager is set twice or more in the same execution.</Details>
+        </Plugin>
+
+        <Detector class="DetectMultipleSecurityManagerSets">
+                <Details>
+                        Reports an error when the SecurityManager is set twice or more in the same execution.
+                </Details>
+
+        </Detector>
+
+        <BugPattern type="MULTIPLE_SECURITY_MANAGER_SET_BUG">
+                <ShortDescription>Set Security Manager Multiple Times</ShortDescription>
+                <LongDescription>Set Security Manager Multiple Times: {1}</LongDescription>
+                <Details>
+<![CDATA[
+<p>We need to know if people are dynamically changing security policies and this is one
+ way to do it.</p>
+]]>
+                </Details>
+        </BugPattern>
+
+        <BugCode abbrev="MSMSB">MULTIPLE_SECURITY_MANAGER_SET_BUG</BugCode>
+</MessageCollection>
