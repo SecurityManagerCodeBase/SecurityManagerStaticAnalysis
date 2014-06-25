@@ -202,8 +202,8 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		checkingPos--;
 		Location cfgLoc = locArray[checkingPos];
 		ValueNumberFrame cfgVnf = vnaDataflow.getAnalysis()
-		    .getFactAtLocation(currentLoc);
-		// System.out.println("Value Number: "+String.valueOf(vn.getNumber()));
+		    .getFactAtLocation(cfgLoc);
+		System.out.println("Value Number Looking for: "+String.valueOf(vn.getNumber()));
 		if (!cfgVnf.contains(vn)) {
 		  stillChecking = false;
 		}
@@ -215,7 +215,10 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		lastSeenPos++;
 		lastSeenLocation = locArray[lastSeenPos];
 	      }
-
+              System.out.println("value number frame string: "+vnf.toString());
+              System.out.println("first seen value number frame string: "+
+        	  vnaDataflow.getAnalysis()
+		    .getFactAtLocation(lastSeenLocation).toString());
 	      // bugInstance.addString(cfgLoc.getHandle().toString());
 	      bugInstance.addString(lastSeenLocation.getHandle()
 		  .getInstruction().getName());
