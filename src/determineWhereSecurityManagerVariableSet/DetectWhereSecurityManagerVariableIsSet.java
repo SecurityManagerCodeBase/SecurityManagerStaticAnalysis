@@ -6,6 +6,7 @@ import java.util.Iterator;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionFactory;
 import org.apache.bcel.generic.InstructionHandle;
@@ -143,7 +144,9 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		  .getFactAtLocation(currentLoc);
 	      SignatureParser sigParser = new SignatureParser(
 		  invoke.getSignature(classContext.getConstantPoolGen()));
-	      ValueNumber vn = vnf.getStackValue(0);
+	      //ValueNumber vn = vnf.getStackValue(0);
+	      ValueNumber vn = vnf.getOperand(invoke, classContext.getConstantPoolGen(), 0);
+	      System.out.println("Number of stack values consumed: "+String.valueOf(invoke.consumeStack(classContext.getConstantPoolGen())));
 	      BugInstance bugInstance;
 	      if (operandType.equals(NullType.instance())
 		  || operandNullness.isDefinitelyNull()) {
@@ -153,7 +156,16 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		    .addString(
 			"\nSet to null: " + frame.getStackValue(0) + "\n")
 		    .addSourceLine(methodDescriptor, currentLoc);
-	      } else {
+	      } else if(operandNullness.isDefinitelyNotNull())
+	      {
+		bugInstance = new BugInstance(this,
+		    "DETECT_SECURITY_MANAGER_SET_LOCATION_BUG", HIGH_PRIORITY)
+		    .addClassAndMethod(methodDescriptor)
+		    .addString(
+			"\nNot null: " + frame.getStackValue(0) + "\n")
+		    .addSourceLine(methodDescriptor, currentLoc);
+	      }
+	      else {
 		bugInstance = new BugInstance(this,
 		    "DETECT_SECURITY_MANAGER_SET_LOCATION_BUG", HIGH_PRIORITY)
 		    .addClassAndMethod(methodDescriptor)
@@ -174,8 +186,12 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	       * 
 	       * }
 	       */
-	      Iterator<Location> cfgLocationIter = cfg.locationIterator();
-	      int cfgLocationCount = 0;
+	      
+	      
+	      //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	      //Current problem is here - Can't assume iterator returns in any order
+	      //Iterator<Location> cfgLocationIter = cfg.locationIterator();
+	      /*int cfgLocationCount = 0;
 	      while (cfgLocationIter.hasNext()) {
 		cfgLocationIter.next();
 		cfgLocationCount++;
@@ -195,36 +211,67 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		  break;
 		}
 	      }
+	      System.out.println("Current Location Pos: "+String.valueOf(posOfCurrentLoc));
 	      int checkingPos = posOfCurrentLoc;
 	      boolean stillChecking = true;
 	      String bugString;
-	      while (stillChecking && checkingPos > 0) {
+	      while (stillChecking && checkingPos > 0) {// checkingPos < cfgLocationCount - 1) {
 		checkingPos--;
+		//checkingPos++;
+		//System.out.println("Checking pos: "+String.valueOf(checkingPos));
 		Location cfgLoc = locArray[checkingPos];
 		ValueNumberFrame cfgVnf = vnaDataflow.getAnalysis()
 		    .getFactAtLocation(cfgLoc);
-		System.out.println("Value Number Looking for: "+String.valueOf(vn.getNumber()));
-		if (!cfgVnf.contains(vn)) {
-		  stillChecking = false;
+		System.out.println("Stack size: "+cfgVnf.getStackDepth());
+		//System.out.println("Value Number Looking for: "+String.valueOf(vn.getNumber()));
+		if (!cfgVnf.contains(vn)) { //contains already checks isValid so don't need to do it again
+ 		  stillChecking = false;
 		}
 	      }
-	      int lastSeenPos = checkingPos + 1;
+	      int lastSeenPos = checkingPos; //removed the minus 1 for testing 
+	                                     //to see if I will find the instruction it is actually set in
+	      System.out.println("Checking Pos: "+String.valueOf(checkingPos));
 	      Location lastSeenLocation = locArray[lastSeenPos];
-	      while (lastSeenLocation.getHandle().getInstruction().getName()
-		  .equals("nop") && lastSeenPos < cfgLocationCount - 1) {
-		lastSeenPos++;
-		lastSeenLocation = locArray[lastSeenPos];
+	      */ //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! End of error code
+	      
+	      Location lastSeenLocation = currentLoc;
+	      Location checkingLocation = cfg.getPreviousLocation(currentLoc);
+	      boolean stillChecking = true;
+	      while(stillChecking && !lastSeenLocation.equals(checkingLocation)) //getPreviousLocation returns the same location when the location is the first location
+	      {
+	      ValueNumberFrame cfgVnf = vnaDataflow.getAnalysis()
+		    .getFactAtLocation(checkingLocation);
+		//System.out.println("Stack size: "+cfgVnf.getStackDepth());
+		//System.out.println("Value Number Looking for: "+String.valueOf(vn.getNumber()));
+		if (!cfgVnf.contains(vn)) { //contains already checks isValid so don't need to do it again
+		  stillChecking = false;
+		}
+		lastSeenLocation = checkingLocation;
+		checkingLocation = cfg.getPreviousLocation(lastSeenLocation);
 	      }
-              System.out.println("value number frame string: "+vnf.toString());
-              System.out.println("first seen value number frame string: "+
-        	  vnaDataflow.getAnalysis()
-		    .getFactAtLocation(lastSeenLocation).toString());
+	      /*while (lastSeenLocation.getHandle().getInstruction().getName()
+		  .equals("nop") && lastSeenPos < cfgLocationCount - 1) {//lastSeenPos > -1) {
+		lastSeenPos++;
+		//lastSeenPos--;
+		lastSeenLocation = locArray[lastSeenPos];
+	      }*/
+	      //System.out.println("Last Seen Pos: "+String.valueOf(lastSeenPos));
+	      System.out.println("Class Name: "+jclass.getClassName());
+              //System.out.println("value number frame string: "+vnf.toString());
+              //System.out.println("first seen value number frame string: "+
+        	//  vnaDataflow.getAnalysis()
+		//    .getFactAtLocation(lastSeenLocation).toString());
 	      // bugInstance.addString(cfgLoc.getHandle().toString());
 	      bugInstance.addString(lastSeenLocation.getHandle()
 		  .getInstruction().getName());
+	      bugInstance.addString(lastSeenLocation.getHandle()
+		  .getInstruction().toString());
+	      
 	      bugInstance.addString("\nVariable is set at: ").addSourceLine(
 		  methodDescriptor, lastSeenLocation);
-
+	      bugInstance.addString("Before (position-wise): "+String.valueOf(lastSeenLocation.compareTo(currentLoc)));
+	      bugInstance.addString("Method: "+cfg.getMethodName()+" "+cfg.getMethodSig());
+	      bugInstance.addString("vertice count: "+cfg.getNumVertices());
 	      bugReporter.reportBug(bugInstance);
 	    }
 	    // Location loc = new Location(insHandle,
