@@ -1,9 +1,14 @@
 package determineWhereSecurityManagerVariableSet;
 
+import java.awt.Dimension;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
+
+import javax.swing.JFrame;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.JavaClass;
@@ -25,6 +30,7 @@ import org.apache.bcel.verifier.structurals.ControlFlowGraph;
 
 import com.sun.org.apache.bcel.internal.generic.ClassGen;
 
+import determineWhereSecurityManagerVariableSet.DisplayDFS.DFSDisplayNode;
 import edu.umd.cs.findbugs.BugInstance;
 import edu.umd.cs.findbugs.BugReporter;
 import edu.umd.cs.findbugs.OpcodeStack;
@@ -60,19 +66,40 @@ import edu.umd.cs.findbugs.classfile.engine.bcel.ValueNumberDataflowFactory;
 public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 
   BugReporter bugReporter;
+  ClassDescriptor cd; //used for debugging - can be removed later
+  boolean debugging = true;
+  DisplayDFS dfsDisplay;  //also used for debugging and can be removed later
+  JFrame f;
   static BitSet testSet = new BitSet();
   static {
     testSet.set(Constants.INVOKESTATIC);
   }
+  ArrayList<Integer> seenLocationLabels;
 
   public DetectWhereSecurityManagerVariableIsSet(BugReporter bugReporter) {
     this.bugReporter = bugReporter;
+    if(debugging)
+    {
+      f = new JFrame("DFS Display");
+      f.addWindowListener(new WindowAdapter() {
+        public void windowClosing(WindowEvent e) {System.exit(0);}
+      });
+      dfsDisplay = new DisplayDFS();
+      
+      dfsDisplay.init();
+      f.add(dfsDisplay);
+      f.pack();
+      f.setSize(new Dimension(1000,1000));
+      f.setVisible(true);
+      f.toFront();
+    }
     // IAnalysisCache analysisCache = Global.getAnalysisCache();
   }
 
   @Override
   public void visitClass(ClassDescriptor classDescriptor)
       throws CheckedAnalysisException {
+    cd = classDescriptor;
     IAnalysisCache analysisCache = Global.getAnalysisCache();
 
     JavaClass jclass = analysisCache.getClassAnalysis(JavaClass.class,
@@ -156,10 +183,12 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      // !lastSeenLocation.equals(checkingLocation);
 	      // //getPreviousLocation returns the same location when the
 	      // location is the first location
+	      seenLocationLabels = new ArrayList<Integer>();
+	      DFSDisplayNode newNode = dfsDisplay.addNode(1,insHandle.toString(),null);
 	      ArrayList<Location> locationsVariableLastSeenList = new ArrayList<Location>();
 	      dfsForVariable(cfg, currentLoc, locationsVariableLastSeenList,
 		  vnaDataflow, vn, false, false,
-		  vn.hasFlag(ValueNumber.PHI_NODE), null, methodGen);
+		  vn.hasFlag(ValueNumber.PHI_NODE), null, methodGen, newNode);
 	      System.out.println("number of locations found at the end: "
 		  + locationsVariableLastSeenList.size());
 	      for (Location lastSeenLocation : locationsVariableLastSeenList) {
@@ -241,7 +270,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
       ArrayList<Location> locList, ValueNumberDataflow vnaDataflow,
       ValueNumber vn, boolean lost, boolean lostThenFound,
       boolean currentlyNewValueNumberInDifferentBlock, NameAndTypeTuple nt,
-      MethodGen methodGen) {
+      MethodGen methodGen,DisplayDFS.DFSDisplayNode currentNode) {
     Collection<LocationAndEdgeType> checkingLocations = cfg
 	.getPreviousLocations(currentLoc);
     // **************
@@ -261,7 +290,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
     int branchCount = 0;
     while (checkingLocIter.hasNext()) {
       if (branchCount > 0) {
-	System.out.println("new branch");
+	System.out.println("new branch for class: "+ cd.getClassName());
       }
       branchCount++;
       LocationAndEdgeType tempCheckingLoc = checkingLocIter.next();
@@ -274,6 +303,17 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	  + tempCheckingLoc.getLocation().getHandle().toString() + "    ");
       System.out.print("Value number fram after: " + afterCfgVnf.toString()
 	  + "||");
+      DFSDisplayNode newNode = dfsDisplay.addNode(currentNode.getLevel()+1,tempCheckingLoc.getLocation().getHandle().toString(),currentNode);
+      dfsDisplay.repaint();
+      f.toFront();
+      if(tempCheckingLoc.getEdgeType() != null && seenLocationLabels.contains(new Integer(tempCheckingLoc.getLocation().getBasicBlock().getLabel())))
+      {
+	return; //return if repeating a block again and not just conituning in the same block
+      }
+      else if (tempCheckingLoc.getEdgeType() != null) //if null don't worry about it because it just means the next instruction in the same block
+      {
+	seenLocationLabels.add(new Integer(tempCheckingLoc.getLocation().getBasicBlock().getLabel()));
+      }
       if (tempCheckingLoc.getEdgeType() == null
 	  || tempCheckingLoc.getEdgeType().intValue() == 0) {
 	if (cfgVnf.contains(vn)) {
@@ -284,7 +324,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	  }
 	  dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 	      vnaDataflow, vn, lost, newLostThenFound,
-	      currentlyNewValueNumberInDifferentBlock, nt, methodGen);
+	      currentlyNewValueNumberInDifferentBlock, nt, methodGen,newNode);
 	} else {
 	  // previous statement with no branching and does not contain the value
 	  ValueNumberFrame oldVnf = vnaDataflow.getAnalysis()
@@ -297,8 +337,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		  + String.valueOf(oldVnf.getTopValue().equals(vn)));
 	    }
 	    System.out.println("Instruction name: "
-		+ tempCheckingLoc.getLocation().getHandle().getInstruction()
-		    .getName());
+		+ tempCheckingLoc.getLocation().getHandle().toString());
 
 	      if (oldVnf.getStackDepth() > 0
 		&& oldVnf.getTopValue().equals(vn)
@@ -318,7 +357,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		  false,
 		  new NameAndTypeTuple(fi.getFieldName(methodGen
 		      .getConstantPool()), fi.getFieldType(methodGen
-		      .getConstantPool())), methodGen);
+		      .getConstantPool())), methodGen,newNode);
 	    } else if (currentlyNewValueNumberInDifferentBlock) {
 	      System.out.println("In first branch");
 	      ValueNumber newVn = getEquivalentValueNumberForNewBlock(vn,
@@ -329,7 +368,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      } else {
 		dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 		    vnaDataflow, newVn, lost, lostThenFound,
-		    newVn.hasFlag(ValueNumber.PHI_NODE), nt, methodGen);
+		    newVn.hasFlag(ValueNumber.PHI_NODE), nt, methodGen,newNode);
 	      }
 	    }
 	    else if (nt != null
@@ -345,7 +384,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		      try {
 			dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 			    vnaDataflow, cfgVnf.getTopValue(), true, true, false,
-			    null, methodGen);
+			    null, methodGen,newNode);
 		      } catch (DataflowAnalysisException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -360,7 +399,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      } else {
 		dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 		    vnaDataflow, vn, lost, lostThenFound,
-		    currentlyNewValueNumberInDifferentBlock, nt, methodGen);
+		    currentlyNewValueNumberInDifferentBlock, nt, methodGen,newNode);
 	      }
 	    }
 	  } catch (DataflowAnalysisException e) {
@@ -381,7 +420,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	  }
 	  dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 	      vnaDataflow, vn, lost, newLostThenFound,
-	      currentlyNewValueNumberInDifferentBlock, nt, methodGen);
+	      currentlyNewValueNumberInDifferentBlock, nt, methodGen,newNode);
 	} else {
 	  // branching and does not contain the value
 
@@ -390,7 +429,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		currentLoc, tempCheckingLoc.getLocation(), vnaDataflow);
 	    dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 		vnaDataflow, newVn, lost, lostThenFound,
-		newVn.hasFlag(ValueNumber.PHI_NODE), nt, methodGen);
+		newVn.hasFlag(ValueNumber.PHI_NODE), nt, methodGen,newNode);
 	  } else if (nt != null
 	      && (tempCheckingLoc.getLocation().getHandle().getInstruction() instanceof PUTFIELD || tempCheckingLoc
 		  .getLocation().getHandle().getInstruction() instanceof PUTSTATIC)) {
@@ -403,7 +442,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      try {
 		dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 		    vnaDataflow, cfgVnf.getTopValue(), true, true, false,
-		    null, methodGen);
+		    null, methodGen,newNode);
 	      } catch (DataflowAnalysisException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
@@ -414,7 +453,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 		dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
 		    vnaDataflow, afterCfgVnf.getTopValue(), lost,
 		    lostThenFound, currentlyNewValueNumberInDifferentBlock, nt,
-		    methodGen);
+		    methodGen,newNode);
 	      } catch (DataflowAnalysisException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
@@ -422,7 +461,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	    }
 	  } else {
 	    dfsForVariable(cfg, tempCheckingLoc.getLocation(), locList,
-		vnaDataflow, vn, lost, lostThenFound, false, nt, methodGen);
+		vnaDataflow, vn, lost, lostThenFound, false, nt, methodGen,newNode);
 	  }
 
 	}
