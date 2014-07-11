@@ -78,21 +78,7 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 
   public DetectWhereSecurityManagerVariableIsSet(BugReporter bugReporter) {
     this.bugReporter = bugReporter;
-    if(debugging)
-    {
-      f = new JFrame("DFS Display");
-      f.addWindowListener(new WindowAdapter() {
-        public void windowClosing(WindowEvent e) {System.exit(0);}
-      });
-      dfsDisplay = new DisplayDFS();
-      
-      dfsDisplay.init();
-      f.add(dfsDisplay);
-      f.pack();
-      f.setSize(new Dimension(1000,1000));
-      f.setVisible(true);
-      f.toFront();
-    }
+   
     // IAnalysisCache analysisCache = Global.getAnalysisCache();
   }
 
@@ -174,8 +160,9 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      }
 	      BugInstance bugInstance = new BugInstance(this,
 		  "DETECT_SECURITY_MANAGER_SET_LOCATION_BUG", HIGH_PRIORITY)
-		  .addClassAndMethod(methodDescriptor).addString(bugString)
-		  .addSourceLine(methodDescriptor, currentLoc);
+		  .addClassAndMethod(methodDescriptor).addString(bugString);
+	      
+	      bugInstance.addSourceLine(methodDescriptor, currentLoc);
 	      // Location lastSeenLocation = currentLoc;
 
 	      // boolean haventFoundFirstSet = true;
@@ -184,6 +171,21 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      // //getPreviousLocation returns the same location when the
 	      // location is the first location
 	      seenLocationLabels = new ArrayList<Integer>();
+	      //if(debugging)
+	      //{
+	        f = new JFrame(classContext.getJavaClass().getClassName());
+	        //f.addWindowListener(new WindowAdapter() {
+	        //  public void windowClosing(WindowEvent e) {System.exit(0);}
+	        //});
+	        dfsDisplay = new DisplayDFS();
+	        
+	        dfsDisplay.init();
+	        f.add(dfsDisplay);
+	        f.pack();
+	        f.setSize(new Dimension(1000,1000));
+	        f.setVisible(true);
+	        f.toFront();
+	      //}
 	      DFSDisplayNode newNode = dfsDisplay.addNode(1,insHandle.toString(),null);
 	      ArrayList<Location> locationsVariableLastSeenList = new ArrayList<Location>();
 	      dfsForVariable(cfg, currentLoc, locationsVariableLastSeenList,
@@ -192,11 +194,12 @@ public class DetectWhereSecurityManagerVariableIsSet extends CFGDetector {
 	      System.out.println("number of locations found at the end: "
 		  + locationsVariableLastSeenList.size());
 	      for (Location lastSeenLocation : locationsVariableLastSeenList) {
-		bugInstance.addString(lastSeenLocation.getHandle()
-		    .getInstruction().getName());
+		//bugInstance.addString(lastSeenLocation.getHandle()
+		//    .getInstruction().getName());
 		bugInstance.addString(lastSeenLocation.getHandle()
 		    .getInstruction().toString());
-		bugInstance.addString("\nVariable is set at: ").addSourceLine(
+		bugInstance.addString("Variable is set at: ");
+		bugInstance.addSourceLine(
 		    methodDescriptor, lastSeenLocation);
 	      }
 	      /*
